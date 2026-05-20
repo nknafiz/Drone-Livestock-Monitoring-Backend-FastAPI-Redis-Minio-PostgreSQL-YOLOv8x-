@@ -1,4 +1,4 @@
-html
+
 <div align="center">
 <img src="https://fastapi.tiangolo.com/img/logo-margin/logo-teal.png" width="220" alt="FastAPI"/>
 # DLM — Drone Livestock Monitoring System
