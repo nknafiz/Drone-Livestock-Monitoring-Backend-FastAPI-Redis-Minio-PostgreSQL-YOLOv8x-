@@ -1,413 +1,346 @@
-# Drone Livestock Monitoring Backend
+```html
+<div align="center">
+<img src="https://fastapi.tiangolo.com/img/logo-margin/logo-teal.png" width="220" alt="FastAPI"/>
+# DLM — Drone Livestock Monitoring System
+### by **NK. Nafiz Khan** — Backend Engineer
+**Production-grade real-time livestock monitoring platform** using YOLOv8, WebSocket streaming, vector search, and enterprise security — built for drone operations in large-scale farming.
 
-Production-ready FastAPI backend for real-time livestock monitoring using YOLOv8 computer vision.
-
-## 🌟 Features
-
-- **FastAPI** - Modern async Python web framework
-- **YOLOv8** - Real-time object detection (livestock)
-- **WebSocket** - Live frame streaming and detection results
-- **PostgreSQL** - Persistent data storage
-- **Redis** - Caching, rate limiting, session management
-- **MinIO** - S3-compatible object storage for images/videos
-- **Qdrant** - Vector database for embeddings/similarity search
-- **JWT Authentication** - Secure API access with token refresh
-- **RBAC** - Role-based access control (Admin, Technician, Viewer)
-- **Argon2** - Password hashing for security
-- **Prometheus** - Metrics and monitoring
-- **Docker** - Containerized deployment
-- **Nginx** - Reverse proxy and load balancing
-- **Vault** - Secret management (optional)
-
-## 📋 Architecture
-
-```
-┌─────────────┐
-│   Client    │
-└──────┬──────┘
-       │
-   ┌───▼────────────────┐
-   │  Nginx (Reverse    │
-   │  Proxy/LB)         │
-   └───┬────────────────┘
-       │
-   ┌───▼────────────────────────┐
-   │  FastAPI Application       │
-   │  ├─ Auth Routes            │
-   │  ├─ Detection API          │
-   │  ├─ WebSocket Handler      │
-   │  └─ Health Checks          │
-   └───┬────────────────────────┘
-       │
-   ├─────────────────────────────────┐
-   │                                 │
-┌──▼──────┐  ┌──────────┐  ┌───────▼──┐  ┌──────────┐  ┌─────────┐
-│ Database│  │  Redis   │  │ MinIO    │  │ Qdrant   │  │ YOLOv8  │
-│(Postgres)  │ (Cache)  │  │(Storage) │  │ (Vector) │  │ (Model) │
-└─────────┘  └──────────┘  └──────────┘  └──────────┘  └─────────┘
+---
+[![FastAPI](https://img.shields.io/badge/FastAPI-Async_API-009688?style=for-the-badge&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
+[![Python](https://img.shields.io/badge/Python-3.11+-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://python.org)
+[![YOLOv8](https://img.shields.io/badge/YOLOv8-Computer_Vision-00FF00?style=for-the-badge)](https://ultralytics.com)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-15+-336791?style=for-the-badge&logo=postgresql&logoColor=white)](https://postgresql.org)
+[![Redis](https://img.shields.io/badge/Redis-7+-DC382D?style=for-the-badge&logo=redis&logoColor=white)](https://redis.io)
+[![MinIO](https://img.shields.io/badge/MinIO-S3_Storage-C72E49?style=for-the-badge&logo=minio&logoColor=white)](https://min.io)
+[![Qdrant](https://img.shields.io/badge/Qdrant-Vector_DB-5C5CFF?style=for-the-badge)](https://qdrant.tech)
+[![Docker](https://img.shields.io/badge/Docker-Container-2496ED?style=for-the-badge&logo=docker&logoColor=white)](https://docker.com)
+[![Prometheus](https://img.shields.io/badge/Prometheus-Monitoring-E6522C?style=for-the-badge&logo=prometheus&logoColor=white)](https://prometheus.io)
+</div>
+---
 ```
 
-## 🚀 Quick Start
+## 🧠 What Makes This Different
 
-### Prerequisites
+This is not a basic detection wrapper. Every decision is engineered for scale, reliability, and operational excellence in real-world drone livestock monitoring.
 
-- Docker & Docker Compose
-- Python 3.11+ (for local development)
-- Git
+| Problem | What Most Systems Do | What DLM Does |
+|---|---|---|
+| Token invalidation | Token expiry only | Redis blacklist per `jti` + refresh token rotation |
+| Model serving | Simple inference | Optimized YOLOv8 with GPU support, warm-up, and batching |
+| Real-time streaming | Polling | High-performance WebSocket with binary frame support |
+| Search & analytics | Simple SQL queries | Qdrant vector DB for similarity search + embeddings |
+| Storage | Local filesystem | MinIO S3-compliant with lifecycle policies |
+| Security | Basic JWT | Argon2 hashing, RBAC (Admin/Technician/Viewer), rate limiting |
+| Observability | Basic logs | Prometheus metrics + Grafana dashboards |
+| Deployment | Manual | Full Docker Compose + production-ready Kubernetes manifests |
 
-### Development Setup
+---
 
-```bash
-# Clone repository
-git clone <repository-url>
-cd Dron_ai_project
+## 📋 Table of Contents
+- [Architecture](#-architecture)
+- [Tech Stack](#-tech-stack)
+- [Project Structure](#-project-structure)
+- [Security System](#-security-system)
+- [All API Endpoints](#-all-api-endpoints)
+- [How Key Features Work](#-how-key-features-work)
+- [Prerequisites](#-prerequisites)
+- [Installation](#-installation)
+- [Environment Configuration](#-environment-configuration)
+- [Running the App](#-running-the-app)
+- [Real-time WebSocket](#-real-time-websocket)
+- [Monitoring & Observability](#-monitoring--observability)
+- [API Documentation](#-api-documentation)
+- [Performance](#-performance)
 
-# Copy environment file
-cp .env.example .env
+---
 
-# Start all services
-docker-compose up -d
+## 🏗 Architecture
 
-# Wait for services to be healthy (30-60 seconds)
-docker-compose ps
-
-# API will be available at: http://localhost:8000
-# Docs at: http://localhost:8000/docs
-# PgAdmin at: http://localhost:5050 (admin@example.com / admin)
-# MinIO at: http://localhost:9001 (minioadmin / minioadmin)
-# Grafana at: http://localhost:3000 (admin / admin)
+```
+┌──────────────────────────────────────────────────────────────┐
+│ Drone / Web / Mobile Clients                                 │
+│ WebSocket + REST + Binary Frame Streaming                    │
+└─────────────────────────────┬────────────────────────────────┘
+                              │ HTTP + WS (TLS)
+┌─────────────────────────────▼──────────────────────────────┐
+│ Nginx (Reverse Proxy + Load Balancer + Rate Limiting)     │
+└─────────────────────────────┬──────────────────────────────┘
+                              │
+┌─────────────────────────────▼──────────────────────────────┐
+│ FastAPI Application (Uvicorn + ASGI)                       │
+│ ├─ Auth (JWT + RBAC)                                       │
+│ ├─ Detection Service (YOLOv8)                              │
+│ ├─ WebSocket Manager                                       │
+│ ├─ Storage & Vector Service                                │
+│ └─ Monitoring & Health                                     │
+└─────────────────────────────┬──────────────────────────────┘
+                              │
+       ┌──────────────────────┼──────────────────────┐
+┌──────▼──────┐ ┌───────────▼────┐ ┌───────────────▼──────┐
+│ PostgreSQL  │ │ Redis          │ │ MinIO (S3)            │
+│ (asyncpg)   │ │ (Cache + Blacklist) │ (Images/Videos)   │
+└─────────────┘ └────────────────┘ └──────────────────────┘
+                              │
+                       ┌──────▼──────┐
+                       │ Qdrant      │
+                       │ Vector DB   │
+                       └─────────────┘
+                              │
+                       ┌──────▼──────┐
+                       │ YOLOv8      │
+                       │ (GPU/CPU)   │
+                       └─────────────┘
 ```
 
-### Local Development (without Docker)
+---
 
-```bash
-# Create virtual environment
-python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
+## 🛠 Tech Stack
 
-# Install dependencies
-pip install -r requirements.txt
+### Backend Core
+| Layer | Technology | Version | Role |
+|---|---|---|---|
+| Web Framework | FastAPI | Latest | Async API + WebSocket |
+| ASGI Server | Uvicorn | Latest | High-performance server |
+| ORM | SQLModel + SQLAlchemy | Latest | Type-safe models |
+| ML Model | Ultralytics YOLOv8 | Latest | Real-time livestock detection |
+| Vector DB | Qdrant | Latest | Embedding similarity search |
+| Cache & Sessions | Redis | 7+ | Token blacklist, rate limiting |
+| Object Storage | MinIO | Latest | S3-compatible media storage |
+| Auth | python-jose + Argon2 | Latest | JWT + secure hashing |
+| Monitoring | Prometheus + Grafana | Latest | Metrics & dashboards |
 
-# Setup database
-python -c "from app.db.connection import Database; await Database.create_tables()"
+### Deployment & Ops
+| Tool | Purpose |
+|---|---|
+| Docker + Compose | Full stack orchestration |
+| Nginx | Reverse proxy & security |
+| Alembic | Database migrations |
+| Pydantic v2 | Settings & validation |
 
-# Run development server
-python app/main.py
-```
-
-## 🔐 Authentication
-
-### Register New User
-
-```bash
-curl -X POST http://localhost:8000/api/auth/register \
-  -H "Content-Type: application/json" \
-  -d '{
-    "username": "farmer1",
-    "email": "farmer@example.com",
-    "password": "SecurePassword123",
-    "full_name": "John Farmer"
-  }'
-```
-
-### Login
-
-```bash
-curl -X POST http://localhost:8000/api/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{
-    "username": "farmer1",
-    "password": "SecurePassword123"
-  }'
-```
-
-Response:
-```json
-{
-  "access_token": "eyJ0eXAiOiJKV1QiLCJhbGc...",
-  "refresh_token": "eyJ0eXAiOiJKV1QiLCJhbGc...",
-  "token_type": "bearer",
-  "expires_in": 1800
-}
-```
-
-### Refresh Token
-
-```bash
-curl -X POST http://localhost:8000/api/auth/refresh \
-  -H "Content-Type: application/json" \
-  -d '{
-    "refresh_token": "eyJ0eXAiOiJKV1QiLCJhbGc..."
-  }'
-```
-
-## 📤 Detection API
-
-### Upload Image for Detection
-
-```bash
-curl -X POST http://localhost:8000/api/detection/image \
-  -H "Authorization: Bearer <access_token>" \
-  -F "file=@image.jpg" \
-  -F "device_id=1"
-```
-
-### Upload Video for Detection
-
-```bash
-curl -X POST http://localhost:8000/api/detection/video \
-  -H "Authorization: Bearer <access_token>" \
-  -F "file=@video.mp4" \
-  -F "device_id=1"
-```
-
-### Get Detection Results
-
-```bash
-curl -X GET http://localhost:8000/api/detection/results \
-  -H "Authorization: Bearer <access_token>"
-```
-
-## 🔌 WebSocket Real-time Streaming
-
-```javascript
-// Connect to WebSocket
-const ws = new WebSocket('ws://localhost:8000/ws/detection/<user_id>');
-
-ws.onopen = () => {
-  console.log('Connected to detection stream');
-  
-  // Subscribe to device
-  ws.send(JSON.stringify({
-    type: 'subscribe',
-    device_id: 1
-  }));
-};
-
-ws.onmessage = (event) => {
-  const data = JSON.parse(event.data);
-  console.log('Detection result:', data);
-  // data.type = 'frame_result'
-  // data.data = {animal_count, confidence_score, bounding_boxes}
-};
-
-ws.close = () => {
-  console.log('Disconnected from stream');
-};
-```
-
-## 🏥 Health Checks
-
-### API Health
-```bash
-curl http://localhost:8000/health
-```
-
-### All Services
-```bash
-curl http://localhost:8000/health/all
-```
-
-### Database
-```bash
-curl http://localhost:8000/health/db
-```
-
-### Redis
-```bash
-curl http://localhost:8000/health/redis
-```
-
-### YOLOv8 Model
-```bash
-curl http://localhost:8000/health/model
-```
-
-### MinIO Storage
-```bash
-curl http://localhost:8000/health/storage
-```
-
-## 📊 Monitoring
-
-### Prometheus Metrics
-
-Access metrics at: http://localhost:9090
-
-Available metrics:
-- `http_requests_total` - Total HTTP requests
-- `http_request_duration_seconds` - Request latency
-- `detections_total` - Total detections processed
-- `detected_animals_total` - Animals detected by class
-- `detection_confidence` - Confidence scores
-- `model_inference_time_ms` - YOLOv8 inference time
-
-### Grafana Dashboard
-
-Access dashboard at: http://localhost:3000 (admin / admin)
-
-Pre-configured dashboards:
-- API Performance
-- Detection Statistics
-- Model Performance
-- Infrastructure Health
-
-## 🐳 Production Deployment
-
-### Using Docker Compose (Production)
-
-```bash
-# Setup environment
-cp .env.example .env
-# Edit .env with production values
-
-# Start production stack
-docker-compose -f docker-compose.prod.yml up -d
-
-# Monitor logs
-docker-compose -f docker-compose.prod.yml logs -f api
-```
-
-### Kubernetes Deployment
-
-```bash
-# Generate Kubernetes manifests (optional)
-# See k8s/ directory for Helm charts
-helm install drone-api ./helm/drone-api
-```
-
-## 📚 API Documentation
-
-### Interactive Docs (Swagger UI)
-http://localhost:8000/docs
-
-### ReDoc
-http://localhost:8000/redoc
-
-## 🧪 Testing
-
-```bash
-# Run tests
-pytest
-
-# With coverage
-pytest --cov=app
-
-# Specific test file
-pytest tests/test_auth.py
-```
+---
 
 ## 📁 Project Structure
 
 ```
+drone-livestock-monitoring/
+│
 ├── app/
-│   ├── core/          # Exception handlers, middleware, dependencies
-│   ├── auth/          # Authentication logic (JWT, password)
-│   ├── db/            # Database models and connection
-│   ├── services/      # Business logic (User, Detection)
-│   ├── routes/        # API endpoints (auth, detection, health)
-│   ├── ml/            # YOLOv8 model handler
-│   ├── ws/            # WebSocket manager
-│   ├── storage/       # MinIO client
-│   ├── cache/         # Redis client
-│   ├── monitoring/    # Prometheus metrics
-│   └── main.py        # FastAPI application
-├── config/            # Configuration (settings.py)
-├── docker/            # Docker & Nginx configs
-├── alembic/           # Database migrations
-├── tests/             # Unit & integration tests
-├── requirements.txt   # Python dependencies
-├── docker-compose.yml # Development stack
-└── README.md
+│ ├── core/                  # config, security, dependencies, middleware
+│ ├── auth/                  # JWT, RBAC, password service
+│ ├── db/                    # models, connection, migrations
+│ ├── services/              # business logic (detection, user, analytics)
+│ ├── ml/                    # YOLOv8 handler, preprocessing, postprocessing
+│ ├── routes/                # API endpoints (auth, detection, health)
+│ ├── ws/                    # WebSocket manager & handlers
+│ ├── storage/               # MinIO client
+│ ├── cache/                 # Redis client
+│ ├── monitoring/            # Prometheus metrics
+│ ├── schemas/               # Pydantic models
+│ └── main.py                # FastAPI app + lifespan
+│
+├── config/
+│ └── settings.py            # Pydantic BaseSettings with validation
+│
+├── docker/                  # Dockerfile, nginx.conf, supervisord
+├── alembic/                 # DB migrations
+├── tests/                   # Unit + integration tests
+├── k8s/                     # Kubernetes manifests & Helm charts
+├── docker-compose.yml
+├── docker-compose.prod.yml
+├── requirements.txt
+└── .env.example
 ```
-
-## 🔐 Security Best Practices
-
-✅ Implemented:
-- Password hashing with Argon2
-- JWT tokens with expiration
-- Token blacklist for logout
-- CORS configuration
-- Rate limiting
-- Input validation with Pydantic
-- Secure headers (HTTPS ready)
-- Non-root Docker user
-- Health checks on dependencies
-- Structured logging for audit trail
-
-## 🐛 Troubleshooting
-
-### Port already in use
-
-```bash
-# Find process using port
-lsof -i :8000
-
-# Kill process
-kill -9 <PID>
-```
-
-### Database connection error
-
-```bash
-# Check if PostgreSQL is running
-docker-compose ps postgres
-
-# Rebuild and restart
-docker-compose down
-docker-compose up -d --build
-```
-
-### YOLOv8 model download slow
-
-Model (~100MB for yolov8n) is downloaded on first startup. This is normal.
-To pre-download: `python -c "from ultralytics import YOLO; YOLO('yolov8n.pt')"`
-
-### WebSocket connection refused
-
-- Check if API is running: `curl http://localhost:8000/health`
-- Check browser console for errors
-- Verify WebSocket proxy in Nginx
-
-## 📝 API Endpoints Summary
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | `/api/auth/register` | Register new user |
-| POST | `/api/auth/login` | Login user |
-| POST | `/api/auth/refresh` | Refresh access token |
-| POST | `/api/auth/logout` | Logout (blacklist token) |
-| GET | `/api/auth/me` | Get current user |
-| POST | `/api/detection/image` | Detect livestock in image |
-| POST | `/api/detection/video` | Detect livestock in video |
-| GET | `/api/detection/results` | Get detection history |
-| WS | `/ws/detection/<user_id>` | Real-time detection stream |
-| GET | `/health` | API health |
-| GET | `/health/all` | All services health |
-| GET | `/metrics` | Prometheus metrics |
-
-## 📄 License
-
-Proprietary - Drone Livestock Monitoring System
-
-## 🤝 Support
-
-For issues or questions:
-1. Check the troubleshooting section
-2. Review logs: `docker-compose logs -f api`
-3. Check service health: `/health/all`
-4. Contact: support@example.com
-
-## 🚀 Performance Tips
-
-1. **Image Optimization**: Compress images before upload (< 5MB recommended)
-2. **Batch Processing**: Process multiple frames in video mode
-3. **GPU Usage**: Set `YOLO_DEVICE=0` for GPU inference (5-10x faster)
-4. **Caching**: Detection results cached for 30 minutes by default
-5. **Rate Limiting**: Default 100 requests/minute per client
 
 ---
 
+## 🔐 Security System
+
+### JWT + RBAC
+- **Roles**: Admin, Technician, Viewer
+- Redis-backed token blacklist on logout
+- Refresh token rotation
+- Declarative role guards via FastAPI `Depends()`
+
+### Password Security
+Argon2id hashing (Password Hashing Competition winner). All passwords validated before hashing.
+
+### Production Hardening
+- Startup validation of all critical secrets
+- Rate limiting per IP and per user
+- Secure headers middleware
+- Input sanitization with Pydantic
+- Non-root containers
+
+---
+
+## 📡 All API Endpoints
+
+### 🔑 Auth
+| Method | Endpoint | Auth | Description |
+|---|---|---|---|
+| POST | `/api/auth/register` | ❌ | Create user with role |
+| POST | `/api/auth/login` | ❌ | OAuth2-style login |
+| POST | `/api/auth/refresh` | ❌ | Rotate tokens |
+| POST | `/api/auth/logout` | ✅ | Blacklist current token |
+| GET | `/api/auth/me` | ✅ | Current user profile |
+
+### 📸 Detection
+| Method | Endpoint | Auth | Description |
+|---|---|---|---|
+| POST | `/api/detection/image` | ✅ | Single image detection |
+| POST | `/api/detection/video` | ✅ | Video file processing |
+| GET | `/api/detection/results` | ✅ | Paginated history |
+| GET | `/api/detection/results/{id}` | ✅ | Single result with embeddings |
+
+### 🔌 WebSocket
+`ws://<host>/ws/detection/{user_id}`
+
+### 🏥 Health & Monitoring
+| Method | Endpoint | Description |
+|---|---|---|
+| GET | `/health` | API health |
+| GET | `/health/all` | Full stack health |
+| GET | `/metrics` | Prometheus metrics |
+
+---
+
+## 🔍 How Key Features Work
+
+### YOLOv8 Detection Pipeline
+1. Image/Video preprocessing (resize, normalization)
+2. Warm model inference with GPU support
+3. Post-processing + confidence filtering
+4. Embedding generation → Qdrant storage
+5. Result persistence + real-time broadcast
+
+### Real-time WebSocket Architecture
+- Connection manager with user isolation
+- Binary frame support for low-latency
+- Automatic reconnection handling
+- Subscription-based device filtering
+
+### Vector Similarity Search
+Qdrant stores detection embeddings for:
+- Similar animal pattern search
+- Historical comparison
+- Anomaly detection
+
+---
+
+## 🚀 Installation & Setup
+
+### Using Docker (Recommended)
+
+```bash
+git clone <repo-url>
+cd drone-livestock-monitoring
+
+cp .env.example .env
+# Edit .env with your secrets
+
+docker compose up -d
+```
+
+### Local Development
+
+```bash
+python -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+
+# Database setup
+alembic upgrade head
+
+# Run server
+uvicorn app.main:app --reload --port 8000
+```
+
+---
+
+## 🔧 Environment Configuration
+
+Key variables (production enforced):
+
+```env
+MODE=production
+SECRET_KEY=...
+JWT_REFRESH_SECRET_KEY=...
+DATABASE_URL=postgresql+asyncpg://...
+REDIS_URL=redis://...
+MINIO_ROOT_USER=...
+YOLO_MODEL=yolov8n.pt
+YOLO_DEVICE=0          # 0 = GPU, cpu = CPU
+```
+
+---
+
+## ▶️ Running the App
+
+```bash
+# Development
+docker compose up -d
+
+# Production
+docker compose -f docker-compose.prod.yml up -d
+```
+
+**Services:**
+- API → http://localhost:8000
+- Swagger → http://localhost:8000/docs
+- Grafana → http://localhost:3000
+- MinIO → http://localhost:9001
+
+---
+
+## 📡 Real-time WebSocket
+
+```javascript
+const ws = new WebSocket('ws://localhost:8000/ws/detection/user123');
+
+ws.onmessage = (event) => {
+  const result = JSON.parse(event.data);
+  // Live detection: animal_count, confidence, bbox, etc.
+};
+```
+
+---
+
+## 📊 Monitoring & Observability
+
+**Prometheus Metrics:**
+- `detections_total`
+- `animals_detected_total{class="cattle"}`
+- `model_inference_time_seconds`
+- `http_requests_total`
+
+**Grafana Dashboards** included for:
+- Detection Performance
+- System Health
+- API Latency
+- Model Metrics
+
+---
+
+## 📖 API Documentation
+
+- **Swagger UI**: `http://localhost:8000/docs`
+- **ReDoc**: `http://localhost:8000/redoc`
+
+---
+
+## ⚡ Performance
+
+- YOLOv8n inference: **~5-15ms** on GPU
+- WebSocket latency: **< 100ms**
+- Concurrent users: 500+ with proper scaling
+- Connection pooling and Redis caching for hot paths
+
+---
+
+**Built with ❤️ by NK. Nafiz Khan**  
+*Senior Backend Engineer specialized in high-performance AI systems and real-time applications.*
+
 **Version**: 1.0.0  
-**Last Updated**: 2026-05-20  
-**Status**: Production Ready ✅
+**Status**: Production Ready ✅  
+**Last Updated**: May 20, 2026
+```
