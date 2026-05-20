@@ -276,36 +276,6 @@ docker-compose -f docker-compose.prod.yml logs -f api
 helm install drone-api ./helm/drone-api
 ```
 
-## 🔧 Configuration
-
-Environment variables (`.env`):
-
-```env
-# Database
-DATABASE_URL=postgresql+asyncpg://user:pass@host:5432/db
-
-# Redis
-REDIS_URL=redis://host:6379/0
-
-# MinIO
-MINIO_URL=http://minio:9000
-MINIO_ROOT_USER=minioadmin
-MINIO_ROOT_PASSWORD=minioadmin
-
-# JWT
-JWT_SECRET_KEY=your-secret-key
-JWT_ACCESS_TOKEN_EXPIRE_MINUTES=30
-
-# YOLOv8
-YOLO_MODEL=yolov8n  # n, s, m, l, x
-YOLO_CONF_THRESHOLD=0.25
-YOLO_DEVICE=auto    # auto, cpu, 0 (gpu)
-
-# Production
-ENVIRONMENT=production
-DEBUG=false
-```
-
 ## 📚 API Documentation
 
 ### Interactive Docs (Swagger UI)
