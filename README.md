@@ -1,4 +1,4 @@
-```html
+html
 <div align="center">
 <img src="https://fastapi.tiangolo.com/img/logo-margin/logo-teal.png" width="220" alt="FastAPI"/>
 # DLM — Drone Livestock Monitoring System
@@ -16,8 +16,6 @@
 [![Docker](https://img.shields.io/badge/Docker-Container-2496ED?style=for-the-badge&logo=docker&logoColor=white)](https://docker.com)
 [![Prometheus](https://img.shields.io/badge/Prometheus-Monitoring-E6522C?style=for-the-badge&logo=prometheus&logoColor=white)](https://prometheus.io)
 </div>
----
-```
 
 ## 🧠 What Makes This Different
 
