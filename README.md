@@ -1,6 +1,5 @@
 
 <div align="center">
-<img src="https://fastapi.tiangolo.com/img/logo-margin/logo-teal.png" width="220" alt="FastAPI"/>
 # DLM — Drone Livestock Monitoring System
 ### by **NK. Nafiz Khan** — Backend Engineer
 **Production-grade real-time livestock monitoring platform** using YOLOv8, WebSocket streaming, vector search, and enterprise security — built for drone operations in large-scale farming.
